@@ -38,7 +38,11 @@ export const WorldBackground = ({ container, currentRoom, gridBgUrl: gridBgUrlPr
     gridBgUrlProp !== undefined
       ? gridBgUrlProp
       : (ROOM_GRID_BACKGROUND[currentRoom as 1 | 2] ?? null);
-  const displayGridBgUrl = getDriveImageDisplayUrl(gridBgUrl ?? '');
+  let displayGridBgUrl = getDriveImageDisplayUrl(gridBgUrl ?? '');
+  // PIXI.Assets.load ต้องได้ absolute URL ในบางสภาพแวดล้อม
+  if (typeof window !== 'undefined' && displayGridBgUrl.startsWith('/')) {
+    displayGridBgUrl = window.location.origin + displayGridBgUrl;
+  }
   const isMobileDevice = isMobile();
 
   useEffect(() => {

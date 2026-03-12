@@ -21,11 +21,21 @@ export async function PATCH(
     }
     const body = await request.json().catch(() => ({}));
     const name = typeof body.name === "string" ? body.name.trim() || undefined : undefined;
-    const background_url = body.background_url === null
-      ? null
-      : typeof body.background_url === "string"
-      ? body.background_url.trim() || null
-      : undefined;
+    let background_url: string | null | undefined =
+      body.background_url === null
+        ? null
+        : typeof body.background_url === "string"
+          ? body.background_url.trim() || null
+          : undefined;
+    // ไม่บันทึก URL Drive ที่ตัดหรือไม่สมบูรณ์ (ไม่มี id=)
+    if (
+      typeof background_url === "string" &&
+      background_url.includes("drive.google.com") &&
+      !/[\?&]id=[^&]/.test(background_url) &&
+      (background_url.includes("/uc?i") || background_url.includes("/uc?export"))
+    ) {
+      background_url = null;
+    }
     const slot_price_per_day =
       typeof body.slot_price_per_day === "number"
         ? Math.max(0, body.slot_price_per_day)

@@ -82,6 +82,13 @@ export function getDriveImageDisplayUrl(
   const host = parsed.hostname.toLowerCase();
   const driveId = extractDriveFileId(normalized);
 
+  // URL แบบ Drive ต้องมี file id ถ้าไม่มีหรือดูเหมือน URL ตัด (เช่น .../uc?i) ไม่ใช้
+  const looksLikeTruncatedDrive =
+    isGoogleImageHost(host) &&
+    !driveId &&
+    (normalized.includes("/uc?i") || (normalized.includes("/uc?export") && !normalized.includes("id=")));
+  if (looksLikeTruncatedDrive) return "";
+
   // canonical ลิงก์สำหรับไฟล์ Drive ที่เป็น public
   const directDriveUrl = driveId
     ? `https://drive.google.com/uc?export=view&id=${driveId}`
