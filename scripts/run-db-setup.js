@@ -26,6 +26,10 @@ const r1 = spawnSync(process.execPath, [join(__dirname, "db-init.js")], {
   env: process.env,
 });
 if (r1.status !== 0) {
+  console.error("\nถ้าเกิด 'password authentication failed for user \"postgres\"'");
+  console.error("ให้ตั้งรหัส postgres บนเซิร์ฟเวอร์ให้ตรงกับ .env:");
+  console.error("  sudo bash scripts/server-set-postgres-password.sh 'รหัสจาก_DB_PASSWORD'");
+  console.error("จากนั้นรัน node scripts/run-db-setup.js อีกครั้ง\n");
   process.exit(r1.status ?? 1);
 }
 
