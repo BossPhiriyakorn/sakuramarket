@@ -5,9 +5,10 @@
 #      ชื่อ: EC2_SSH_PRIVATE_KEY  ค่า: เนื้อหาในไฟล์ tectony-dev.pem ทั้งหมด (รวม -----BEGIN/END-----)
 #   2. EC2 Security Group: ต้องอนุญาต Inbound SSH (TCP port 22) จากที่ GitHub Actions รันได้
 #      ถ้า "Connection reset by peer" = เปิด port 22 ให้ Source เป็น 0.0.0.0/0 หรือเพิ่ม IP ranges ของ GitHub (https://api.github.com/meta → actions)
-#   3. บน EC2 ครั้งแรก: ติดตั้ง Node (v18+) และ pm2, สร้างไฟล์ .env ใน DEPLOY_PATH
+#   3. บน EC2 ครั้งแรก: ติดตั้ง Node (v18+) และ pm2 เท่านั้น, สร้างไฟล์ .env ใน DEPLOY_PATH (ไม่ต้อง npm ci/build บน EC2 — ทำบน GitHub runner แล้วส่งไฟล์ไป)
 #      ตัวอย่าง: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash แล้ว nvm install 20 && npm i -g pm2
 #
+#  flow: บิ้วและ install บนเซิร์ฟเวอร์ของ Git → ส่งโค้ด + node_modules + .next ไป EC2 → บน EC2 แค่ pm2 restart
 # ทางเลือก: ตั้ง EC2_HOST หรือ DEPLOY_PATH ใน repo Variables ถ้าไม่ใช้ค่าตั้งต้น
 
 name: Deploy to EC2
@@ -26,6 +27,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node and install & build on GitHub runner
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
 
       - name: Configure SSH
         run: |
@@ -49,13 +58,11 @@ jobs:
           echo "SSH failed after 3 attempts. ตรวจสอบ EC2 Security Group อนุญาต Inbound port 22 จาก 0.0.0.0/0 หรือ GitHub Actions IP"
           exit 1
 
-      # Sync เฉพาะไฟล์จาก repo ไป EC2 (เพิ่ม/อัปเดต) — ไม่ใช้ --delete จึงไม่ลบไฟล์หรือโฟลเดอร์ที่สร้างบนเซิร์ฟเวอร์ (.env, credentials, ไฟล์เชื่อมต่อ ฯลฯ)
-      - name: Sync files to EC2
+      # ส่งโค้ด + node_modules + .next (ที่บิ้วบน runner แล้ว) ไป EC2 — ไม่ส่ง .env, secrets (เก็บของบนเซิร์ฟเวอร์)
+      - name: Sync built files to EC2
         run: |
           rsync -avz \
             -e "ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ConnectionAttempts=3" \
-            --exclude 'node_modules' \
-            --exclude '.next' \
             --exclude '.git' \
             --exclude '.env' \
             --exclude 'secrets' \
@@ -64,9 +71,8 @@ jobs:
             . ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:${{ env.DEPLOY_PATH }}/
 
 
-      # ใช้ ServerAliveInterval/ServerAliveCountMax ป้องกัน SSH Broken pipe ตอน build นาน (next build ใช้เวลาหลายนาที)
-      - name: Install, build and restart on EC2
-        timeout-minutes: 25
+      # บน EC2 ไม่มีการ install/build — แค่ restart app (โค้ด + node_modules + .next ส่งมาจาก runner แล้ว)
+      - name: Restart app on EC2
         run: |
-          ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=10 ${{ env.EC2_USER }}@${{ env.EC2_HOST }} \
-            "source ~/.nvm/nvm.sh 2>/dev/null || true; cd ${{ env.DEPLOY_PATH }} && npm ci && npm run build && (pm2 restart sakura-app --update-env 2>/dev/null || pm2 start server.js --name sakura-app)"
+          ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ConnectionAttempts=3 ${{ env.EC2_USER }}@${{ env.EC2_HOST }} \
+            "cd ${{ env.DEPLOY_PATH }} && (pm2 restart sakura-app --update-env 2>/dev/null || pm2 start server.js --name sakura-app)"
