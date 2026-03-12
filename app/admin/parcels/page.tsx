@@ -632,8 +632,18 @@ function EditRoomModal({
         const form = new FormData();
         form.append("file", pendingFile);
         form.append("folder", "cms");
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: form });
-        const uploadData = await uploadRes.json();
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: form, credentials: "include" });
+        const uploadText = await uploadRes.text();
+        let uploadData: { url?: string; error?: string } = {};
+        try {
+          uploadData = uploadText ? JSON.parse(uploadText) : {};
+        } catch {
+          throw new Error(
+            uploadRes.ok
+              ? "อัปโหลดรูปไม่สำเร็จ (เซิร์ฟเวอร์ส่งกลับข้อมูลผิดรูปแบบ)"
+              : "อัปโหลดรูปไม่สำเร็จ — เซิร์ฟเวอร์อาจ error หรือไม่มี API /api/upload"
+          );
+        }
         setUploading(false);
         if (!uploadRes.ok) throw new Error(uploadData.error || "อัปโหลดรูปไม่สำเร็จ");
         const uploadedUrl = typeof uploadData.url === "string" ? uploadData.url.trim() : "";
@@ -646,6 +656,7 @@ function EditRoomModal({
       // บันทึกข้อมูลห้องลง DB
       const res = await fetch(`/api/data/rooms/${room.id}`, {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: roomName,
@@ -654,9 +665,19 @@ function EditRoomModal({
           min_rent_days: minDaysNum,
         }),
       });
+      const resText = await res.text();
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "บันทึกไม่สำเร็จ");
+        let err: { error?: string } = {};
+        try {
+          err = resText ? JSON.parse(resText) : {};
+        } catch {
+          // เซิร์ฟเวอร์ส่ง HTML (เช่น 404/500) แทน JSON
+          err = {};
+        }
+        throw new Error(
+          err.error ||
+            (resText.startsWith("<") ? "บันทึกไม่สำเร็จ — เซิร์ฟเวอร์ส่งกลับหน้า error (ตรวจสอบการล็อกอินแอดมินหรือ API)" : "บันทึกไม่สำเร็จ")
+        );
       }
 
       onSaved(room.id, roomName, finalBgUrl, slotPriceNum, minDaysNum);
