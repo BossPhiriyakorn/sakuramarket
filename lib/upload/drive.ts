@@ -138,8 +138,5 @@ export async function uploadToDrive(
     supportsAllDrives: true,
   });
 
-  const link = res.data.webContentLink || res.data.webViewLink;
-  if (link && typeof link === "string") return link;
-
-  return `https://drive.google.com/file/d/${fileId}/view`;
+  return `https://drive.google.com/uc?export=view&id=${fileId}`;
 }

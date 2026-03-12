@@ -4,8 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 const ALLOWED_HOSTS = [
   "drive.google.com",
   "drive.usercontent.google.com",
-  "lh3.googleusercontent.com",
+  "googleusercontent.com",
   "docs.google.com",
+  "www.googleapis.com",
 ];
 
 function isAllowedUrl(url: string): boolean {
