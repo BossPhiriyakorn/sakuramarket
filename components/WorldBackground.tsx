@@ -18,6 +18,26 @@ interface GifSourceLike {
   frames?: unknown[];
 }
 
+function isGifSourceLike(value: unknown): value is GifSourceLike {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'totalFrames' in value &&
+    typeof (value as { totalFrames?: unknown }).totalFrames === 'number'
+  );
+}
+
+function loadTextureFromUrl(url: string): Promise<PIXI.Texture> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.decoding = 'async';
+    img.onload = () => resolve(PIXI.Texture.from(img));
+    img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+    img.src = url;
+  });
+}
+
 interface Props {
   container: PIXI.Container;
   currentRoom: RoomId;
@@ -39,10 +59,14 @@ export const WorldBackground = ({ container, currentRoom, gridBgUrl: gridBgUrlPr
     gridBgUrlProp !== undefined
       ? gridBgUrlProp
       : defaultBgUrl;
+  const shouldTryGif = useMemo(
+    () => /\.gif(?:$|\?)/i.test(preferredBgUrl ?? '') || /\.gif(?:$|\?)/i.test(defaultBgUrl ?? ''),
+    [preferredBgUrl, defaultBgUrl]
+  );
   const displayCandidates = useMemo(() => {
     const preferred = getDriveImageDisplayUrl(preferredBgUrl ?? '');
     const fallback = defaultBgUrl ? getDriveImageDisplayUrl(defaultBgUrl) : '';
-    const seed = preferred ? [preferred] : fallback ? [fallback] : [];
+    const seed = [preferred, fallback].filter((u): u is string => Boolean(u));
     const expanded: string[] = [];
     for (const u of seed) {
       if (!u) continue;
@@ -74,13 +98,22 @@ export const WorldBackground = ({ container, currentRoom, gridBgUrl: gridBgUrlPr
       return;
     }
     let cancelled = false;
-    const isGif = /\.gif$/i.test(displayGridBgUrl);
 
-    const loadWithFallback = async (): Promise<unknown | null> => {
+    const loadWithFallback = async (): Promise<GridBackgroundAsset> => {
       for (const url of displayCandidates) {
+        if (shouldTryGif) {
+          try {
+            const loaded = await PIXI.Assets.load(url);
+            if (isGifSourceLike(loaded)) {
+              return { type: 'gif', source: loaded };
+            }
+          } catch {
+            // fallback to normal image loader
+          }
+        }
         try {
-          const loaded = await PIXI.Assets.load(url);
-          if (loaded) return loaded;
+          const texture = await loadTextureFromUrl(url);
+          return { type: 'texture', texture };
         } catch {
           // try next candidate
         }
@@ -88,26 +121,14 @@ export const WorldBackground = ({ container, currentRoom, gridBgUrl: gridBgUrlPr
       return null;
     };
 
-    loadWithFallback().then((loaded) => {
+    loadWithFallback().then((loadedAsset) => {
       if (cancelled) return;
-      if (
-        isGif &&
-        typeof loaded === 'object' &&
-        loaded !== null &&
-        'totalFrames' in loaded &&
-        typeof (loaded as GifSourceLike).totalFrames === 'number'
-      ) {
-        setAsset({ type: 'gif', source: loaded as GifSourceLike });
-      } else if (loaded) {
-        setAsset({ type: 'texture', texture: loaded as PIXI.Texture });
-      } else {
-        setAsset(null);
-      }
+      setAsset(loadedAsset);
     }).catch(() => {
       if (!cancelled) setAsset(null);
     });
     return () => { cancelled = true; };
-  }, [displayGridBgUrl, displayCandidates]);
+  }, [displayGridBgUrl, displayCandidates, shouldTryGif]);
 
   useEffect(() => {
     const layer = new PIXI.Container();
