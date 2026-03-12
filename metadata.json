@@ -1,0 +1,6 @@
+
+{
+  "name": "Sakura Market - Infinite 2D Marketplace",
+  "description": "A spatial 2D marketplace allowing users to explore, buy, and view parcels on an infinite grid, powered by PixiJS and React.",
+  "requestFramePermissions": []
+}

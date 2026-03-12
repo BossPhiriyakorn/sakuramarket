@@ -1,0 +1,211 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #020617;
+  --foreground: #f1f5f9;
+}
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  /* ไทย = Kanit, อังกฤษ = Prompt */
+  font-family: var(--font-prompt), var(--font-kanit), sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+img,
+video,
+svg {
+  max-width: 100%;
+}
+
+/* Custom scrollbar for sidebar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #ec4899;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #f472b6;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 90s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.glass {
+  background: rgba(2, 6, 23, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* แอป + CMS: กระจกทึบขึ้น — ตัวหนังสือไม่โดนกลืนกับพื้นหลัง */
+.app-glass {
+  background: rgba(2, 6, 23, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.app-glass-subtle {
+  background: rgba(2, 6, 23, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* หน้าล็อกอิน + หน้าอื่นของแอป: พื้นหลังรูปเดียวกับแอป (Bg123.jpg) */
+.login-page-bg,
+.app-page-bg {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-image: url("/backgrounds/Bg123.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: var(--background);
+}
+
+/* Safe area utilities for mobile notch/home-indicator */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* โมบายแอปผู้ใช้: สีตัวอักษรเทา → ขาว/อ่อนขึ้น อ่านชัด + ขนาดฟอนต์เหมาะสม + ตัดคำไม่หลุด */
+@media (max-width: 768px) {
+  .app-page-bg .text-slate-400,
+  .app-glass .text-slate-400,
+  .app-glass-subtle .text-slate-400 {
+    color: rgb(241 245 249);
+  }
+  .app-page-bg .text-slate-500,
+  .app-glass .text-slate-500,
+  .app-glass-subtle .text-slate-500 {
+    color: rgb(226 232 240);
+  }
+  .app-page-bg {
+    font-size: 15px;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  .app-page-bg .text-xs {
+    font-size: 0.8125rem;
+  }
+  .app-page-bg .text-sm {
+    font-size: 0.9375rem;
+  }
+  .app-page-bg main {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+}
+
+/* ป้องกันข้อความยาวหลุดขอบในบล็อกเนื้อหา */
+.app-page-bg [class*="rounded-xl"] {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.login-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.login-input-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.neon-border-pulse {
+  box-shadow: 0 0 15px rgba(247, 37, 133, 0.4);
+}
+
+.btn-neon {
+  background: linear-gradient(135deg, #f72585 0%, #7209b7 100%);
+  box-shadow: 0 0 10px rgba(247, 37, 133, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-neon:hover {
+  box-shadow: 0 0 20px rgba(247, 37, 133, 0.6);
+  transform: translateY(-1px);
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-from-right {
+  animation: slide-in-from-right 0.3s ease-out;
+}
+
+@keyframes slide-out-to-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animate-slide-out-to-right {
+  animation: slide-out-to-right 0.25s ease-in forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.25s ease-out;
+}

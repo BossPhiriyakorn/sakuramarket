@@ -1,0 +1,59 @@
+# Deploy Sakura ไป EC2 — รันเมื่อ push ขึ้น main หรือกด Run workflow จากแท็บ Actions
+#
+# ต้องตั้งค่า:
+#   1. GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+#      ชื่อ: EC2_SSH_PRIVATE_KEY  ค่า: เนื้อหาในไฟล์ tectony-dev.pem ทั้งหมด (รวม -----BEGIN/END-----)
+#   2. บน EC2 ครั้งแรก: ติดตั้ง Node (v18+) และ pm2, สร้างไฟล์ .env ใน DEPLOY_PATH
+#      ตัวอย่าง: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash แล้ว nvm install 20 && npm i -g pm2
+#
+# ทางเลือก: ตั้ง EC2_HOST หรือ DEPLOY_PATH ใน repo Variables ถ้าไม่ใช้ค่าตั้งต้น
+
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # ให้กดรันเองจากแท็บ Actions ได้
+
+env:
+  EC2_HOST: ec2-18-143-144-31.ap-southeast-1.compute.amazonaws.com
+  EC2_USER: ubuntu
+  DEPLOY_PATH: /home/ubuntu/Sakura # โฟลเดอร์บนเซิร์ฟเวอร์ที่วางโค้ด
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy.pem
+          chmod 600 ~/.ssh/deploy.pem
+          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Create deploy directory on EC2
+        run: |
+          ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no ${{ env.EC2_USER }}@${{ env.EC2_HOST }} \
+            "mkdir -p ${{ env.DEPLOY_PATH }}"
+
+      - name: Sync files to EC2
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no" \
+            --exclude 'node_modules' \
+            --exclude '.next' \
+            --exclude '.git' \
+            --exclude '.env' \
+            --exclude 'secrets' \
+            --exclude '*.log' \
+            --exclude 'public/uploads' \
+            . ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:${{ env.DEPLOY_PATH }}/
+
+
+      - name: Install dependencies, build and restart on EC2
+        run: |
+          ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no ${{ env.EC2_USER }}@${{ env.EC2_HOST }} \
+            "source ~/.nvm/nvm.sh 2>/dev/null || true; cd ${{ env.DEPLOY_PATH }} && npm ci && npm run build && (pm2 restart sakura-app --update-env || pm2 start server.js --name sakura-app)"

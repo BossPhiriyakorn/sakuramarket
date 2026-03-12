@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <!-- Sakura Petal Pattern -->
+    <pattern id="sakuraPattern" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+      <!-- Background -->
+      <rect width="200" height="200" fill="#020617"/>
+      
+      <!-- Sakura Petals -->
+      <g opacity="0.15">
+        <ellipse cx="50" cy="50" rx="6" ry="10" fill="#ec4899" transform="rotate(-20 50 50)"/>
+        <ellipse cx="150" cy="50" rx="5" ry="9" fill="#f472b6" transform="rotate(30 150 50)"/>
+        <ellipse cx="100" cy="100" rx="7" ry="11" fill="#f9a8d4" transform="rotate(-45 100 100)"/>
+        <ellipse cx="50" cy="150" rx="6" ry="10" fill="#ec4899" transform="rotate(15 50 150)"/>
+        <ellipse cx="150" cy="150" rx="5" ry="9" fill="#f472b6" transform="rotate(-30 150 150)"/>
+      </g>
+      
+      <!-- Dots -->
+      <g opacity="0.1" fill="#ec4899">
+        <circle cx="25" cy="25" r="2"/>
+        <circle cx="75" cy="75" r="2"/>
+        <circle cx="125" cy="125" r="2"/>
+        <circle cx="175" cy="175" r="2"/>
+      </g>
+    </pattern>
+  </defs>
+  
+  <rect width="200" height="200" fill="url(#sakuraPattern)"/>
+</svg>
