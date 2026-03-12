@@ -53,7 +53,9 @@ jobs:
             . ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:${{ env.DEPLOY_PATH }}/
 
 
-      - name: Install dependencies, build and restart on EC2
+      # ไม่รัน npm install / build อัตโนมัติ — เมื่ออัปเดตโค้ดจะ sync ไฟล์อย่างเดียว
+      # ถ้าต้องการ install/build/restart ให้ SSH เข้า EC2 แล้วรันเอง: cd DEPLOY_PATH && npm ci && npm run build && pm2 restart sakura-app
+      - name: Restart app on EC2 (optional)
         run: |
           ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no ${{ env.EC2_USER }}@${{ env.EC2_HOST }} \
-            "source ~/.nvm/nvm.sh 2>/dev/null || true; cd ${{ env.DEPLOY_PATH }} && npm ci && npm run build && (pm2 restart sakura-app --update-env || pm2 start server.js --name sakura-app)"
+            "source ~/.nvm/nvm.sh 2>/dev/null || true; cd ${{ env.DEPLOY_PATH }} && (pm2 restart sakura-app --update-env 2>/dev/null || pm2 start server.js --name sakura-app || true)"
