@@ -37,9 +37,10 @@ jobs:
           ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no ${{ env.EC2_USER }}@${{ env.EC2_HOST }} \
             "mkdir -p ${{ env.DEPLOY_PATH }}"
 
+      # Sync เฉพาะไฟล์จาก repo ไป EC2 (เพิ่ม/อัปเดต) — ไม่ใช้ --delete จึงไม่ลบไฟล์หรือโฟลเดอร์ที่สร้างบนเซิร์ฟเวอร์ (.env, credentials, ไฟล์เชื่อมต่อ ฯลฯ)
       - name: Sync files to EC2
         run: |
-          rsync -avz --delete \
+          rsync -avz \
             -e "ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no" \
             --exclude 'node_modules' \
             --exclude '.next' \
@@ -51,9 +52,7 @@ jobs:
             . ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:${{ env.DEPLOY_PATH }}/
 
 
-      # ไม่รัน npm install / build อัตโนมัติ — เมื่ออัปเดตโค้ดจะ sync ไฟล์อย่างเดียว
-      # ถ้าต้องการ install/build/restart ให้ SSH เข้า EC2 แล้วรันเอง: cd DEPLOY_PATH && npm ci && npm run build && pm2 restart sakura-app
-      - name: Restart app on EC2 (optional)
+      - name: Install, build and restart on EC2
         run: |
           ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no ${{ env.EC2_USER }}@${{ env.EC2_HOST }} \
-            "source ~/.nvm/nvm.sh 2>/dev/null || true; cd ${{ env.DEPLOY_PATH }} && (pm2 restart sakura-app --update-env 2>/dev/null || pm2 start server.js --name sakura-app || true)"
+            "source ~/.nvm/nvm.sh 2>/dev/null || true; cd ${{ env.DEPLOY_PATH }} && npm ci && npm run build && (pm2 restart sakura-app --update-env 2>/dev/null || pm2 start server.js --name sakura-app)"
