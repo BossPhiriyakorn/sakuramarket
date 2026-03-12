@@ -18,6 +18,7 @@ import { UnifiedHeader } from "@/components/UnifiedHeader";
 import { useNavigationLoading } from "@/components/NavigationLoadingOverlay";
 import { LogoBackgroundColorPicker } from "@/components/LogoBackgroundColorPicker";
 import { normalizeImageUrl } from "@/lib/imageUrl";
+import { uploadImageFile } from "@/lib/api/uploadClient";
 
 /** รายการฟิลด์ที่ต้องกรอกสำหรับลงทะเบียนร้าน (เบื้องต้น ไม่รวมเอกสารยืนยันตน) */
 const REGISTER_FIELDS = {
@@ -113,28 +114,7 @@ export default function RegisterShopPage() {
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const uploadFileToServer = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folder", "shops");
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
-    const text = await res.text();
-    let data: Record<string, unknown> = {};
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error(`อัปโหลดรูปไม่สำเร็จ (เซิร์ฟเวอร์ตอบกลับผิดรูปแบบ${res.status ? ` – HTTP ${res.status}` : ""})`);
-    }
-    if (!res.ok) {
-      throw new Error(typeof data.error === "string" ? data.error : "อัปโหลดไม่สำเร็จ");
-    }
-    if (typeof data.url !== "string" || !data.url) {
-      throw new Error("อัปโหลดสำเร็จแต่ไม่ได้รับ URL ไฟล์");
-    }
-    return data.url;
+    return uploadImageFile(file, "shops");
   };
 
   const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

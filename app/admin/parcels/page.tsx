@@ -5,6 +5,7 @@ import Image from "next/image";
 import { MapPin, Plus, Pencil, X, Upload, Loader2, Lock, Trash2 } from "lucide-react";
 import { ROOM_GRID_BACKGROUND, WORLD_WIDTH, WORLD_HEIGHT } from "../../../constants";
 import { getDriveImageDisplayUrl } from "@/lib/driveImageUrl";
+import { uploadImageFile } from "@/lib/api/uploadClient";
 
 type RoomRow = { id: number; name: string; background_url: string | null; slot_price_per_day: number; min_rent_days: number };
 type ParcelRow = {
@@ -629,25 +630,8 @@ function EditRoomModal({
       // upload ไฟล์ตอนกดบันทึกเท่านั้น
       if (pendingFile) {
         setUploading(true);
-        const form = new FormData();
-        form.append("file", pendingFile);
-        form.append("folder", "cms");
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: form, credentials: "include" });
-        const uploadText = await uploadRes.text();
-        let uploadData: { url?: string; error?: string } = {};
-        try {
-          uploadData = uploadText ? JSON.parse(uploadText) : {};
-        } catch {
-          throw new Error(
-            uploadRes.ok
-              ? "อัปโหลดรูปไม่สำเร็จ (เซิร์ฟเวอร์ส่งกลับข้อมูลผิดรูปแบบ)"
-              : "อัปโหลดรูปไม่สำเร็จ — เซิร์ฟเวอร์อาจ error หรือไม่มี API /api/upload"
-          );
-        }
+        finalBgUrl = await uploadImageFile(pendingFile, "cms");
         setUploading(false);
-        if (!uploadRes.ok) throw new Error(uploadData.error || "อัปโหลดรูปไม่สำเร็จ");
-        const uploadedUrl = typeof uploadData.url === "string" ? uploadData.url.trim() : "";
-        if (uploadedUrl) finalBgUrl = uploadedUrl;
       }
 
       const slotPriceNum = Math.max(0, parseFloat(slotPrice) || 0);

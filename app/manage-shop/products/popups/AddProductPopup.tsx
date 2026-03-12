@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { X, Upload } from "lucide-react";
 import type { ManageProduct, ManageCategory } from "@/types/manageShop";
 import { getDriveImageDisplayUrl } from "@/lib/driveImageUrl";
+import { uploadImageFile } from "@/lib/api/uploadClient";
 
 const ALL_CATEGORY_ID = "cat-all";
 
@@ -83,13 +84,7 @@ export function AddProductPopup({
     try {
       let finalImageUrl = imageUrl && !imageUrl.startsWith("blob:") ? imageUrl : defaultImageUrl;
       if (pendingImageFile) {
-        const form = new FormData();
-        form.append("file", pendingImageFile);
-        form.append("folder", "shops");
-        const res = await fetch("/api/upload", { method: "POST", body: form });
-        const data = await res.json();
-        if (!res.ok) throw new Error((data as { error?: string }).error || "อัปโหลดรูปไม่สำเร็จ");
-        finalImageUrl = (data as { url: string }).url;
+        finalImageUrl = await uploadImageFile(pendingImageFile, "shops");
       }
       await onAdd({
         name: name.trim() || "สินค้าใหม่",

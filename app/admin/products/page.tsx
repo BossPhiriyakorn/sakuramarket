@@ -12,6 +12,7 @@ import {
 import { Loader2, Plus, Pencil, Trash2, X, ImageUp } from "lucide-react";
 import { LoadingImage } from "@/components/LoadingImage";
 import { getDriveImageDisplayUrl } from "@/lib/driveImageUrl";
+import { uploadImageFile } from "@/lib/api/uploadClient";
 
 const FRAME_WIDTH = 200;
 const FRAME_HEIGHT = 200;
@@ -60,16 +61,7 @@ function priceUnitToUsage(price_unit: string): { usage_type: UsageType; usage_da
 }
 
 async function uploadFile(file: File): Promise<string> {
-  const form = new FormData();
-  form.append("file", file);
-  form.append("folder", "cms");
-  const res = await fetch("/api/upload", { method: "POST", body: form });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error ?? "อัปโหลดไม่สำเร็จ");
-  }
-  const data = await res.json();
-  return (data as { url: string }).url;
+  return uploadImageFile(file, "cms");
 }
 
 export default function CmsProductsPage() {

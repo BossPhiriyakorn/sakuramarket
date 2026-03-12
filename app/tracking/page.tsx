@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { UnifiedHeader } from "@/components/UnifiedHeader";
 import { ProductReviewSection } from "@/components/ProductReviewSection";
 import { getDriveImageDisplayUrl } from "@/lib/driveImageUrl";
+import { uploadImageFile } from "@/lib/api/uploadClient";
 import {
   Package,
   Store,
@@ -210,13 +211,7 @@ function TrackingContent() {
     if (!proofFile) return null;
     setProofUploading(true);
     try {
-      const form = new FormData();
-      form.append("file", proofFile);
-      form.append("folder", "profile");
-      const res = await fetch("/api/upload", { method: "POST", credentials: "include", body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error((data as { error?: string }).error || "อัปโหลดไม่สำเร็จ");
-      return (data as { url: string }).url;
+      return await uploadImageFile(proofFile, "profile");
     } catch {
       return null;
     } finally {

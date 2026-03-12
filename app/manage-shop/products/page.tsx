@@ -34,6 +34,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { BookLockModal } from "@/components/BookLockModal";
 import { submitShopVerification } from "@/lib/api/client";
 import { getDriveImageDisplayUrl } from "@/lib/driveImageUrl";
+import { uploadImageFile } from "@/lib/api/uploadClient";
 import { EditProductPopup } from "./popups/EditProductPopup";
 import { AddProductPopup } from "./popups/AddProductPopup";
 import { AddCategoryPopup } from "./popups/AddCategoryPopup";
@@ -211,13 +212,7 @@ export default function ManageShopProductsPage() {
 
   const uploadFileIfNeeded = async (url: string | null, pendingFile: File | null): Promise<string | null> => {
     if (pendingFile) {
-      const form = new FormData();
-      form.append("file", pendingFile);
-      form.append("folder", "shops");
-      const res = await fetch("/api/upload", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error((data as { error?: string }).error || "อัปโหลดไม่สำเร็จ");
-      return (data as { url: string }).url;
+      return uploadImageFile(pendingFile, "shops");
     }
     if (url && url.startsWith("blob:")) return null;
     return url ?? null;
@@ -314,13 +309,7 @@ export default function ManageShopProductsPage() {
     try {
       let url = documentUrl.trim();
       if (documentPendingFile) {
-        const form = new FormData();
-        form.append("file", documentPendingFile);
-        form.append("folder", "shops");
-        const res = await fetch("/api/upload", { method: "POST", body: form });
-        const data = await res.json();
-        if (!res.ok) throw new Error((data as { error?: string }).error || "อัปโหลดไม่สำเร็จ");
-        url = (data as { url: string }).url;
+        url = await uploadImageFile(documentPendingFile, "shops");
       }
       await submitShopVerification({ document_url: url });
       setMyShop((s) => (s ? { ...s, verification_status: "pending" } : null));

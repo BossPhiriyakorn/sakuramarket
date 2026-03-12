@@ -30,6 +30,7 @@ import { Shield, ImageUp, MapPin, CreditCard, ChevronRight } from "lucide-react"
 import { normalizeImageUrl } from "@/lib/imageUrl";
 import { getDriveImageDisplayUrl } from "@/lib/driveImageUrl";
 import { BookLockModal } from "@/components/BookLockModal";
+import { uploadImageFile } from "@/lib/api/uploadClient";
 
 type AddressBookRow = {
   id: string;
@@ -99,13 +100,7 @@ export default function ProfilePage() {
     try {
       let avatarUrlToSend: string | undefined;
       if (pendingAvatarFile) {
-        const form = new FormData();
-        form.append("file", pendingAvatarFile);
-        form.append("folder", "profile");
-        const res = await fetch("/api/upload", { method: "POST", body: form });
-        const data = await res.json();
-        if (!res.ok) throw new Error((data as { error?: string }).error || "อัปโหลดรูปไม่สำเร็จ");
-        avatarUrlToSend = (data as { url: string }).url;
+        avatarUrlToSend = await uploadImageFile(pendingAvatarFile, "profile");
         setAvatarUrl(avatarUrlToSend);
         if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
         setAvatarPreviewUrl(null);
@@ -502,13 +497,7 @@ export default function ProfilePage() {
       let url = identityIdCardUrl.trim();
       if (identityPendingFile) {
         setIdentityUploading(true);
-        const form = new FormData();
-        form.append("file", identityPendingFile);
-        form.append("folder", "profile");
-        const res = await fetch("/api/upload", { method: "POST", body: form });
-        const data = await res.json();
-        if (!res.ok) throw new Error((data as { error?: string }).error || "อัปโหลดไม่สำเร็จ");
-        url = (data as { url: string }).url;
+        url = await uploadImageFile(identityPendingFile, "profile");
         setIdentityUploading(false);
       }
       await submitIdentityVerification({
@@ -527,6 +516,7 @@ export default function ProfilePage() {
       setIdentityError(msg);
       addToast(msg, "error");
     } finally {
+      setIdentityUploading(false);
       setIdentitySubmitting(false);
     }
   };
