@@ -1,9 +1,10 @@
 /**
- * สร้างแอดมินคนแรกด้วยยูส/รหัสที่กำหนด (ไม่ใช้ .env)
+ * สร้างแอดมินคนแรกด้วยยูส/รหัสที่กำหนด
  * ยูส: admin@host.com / รหัส: admin11223344
  * รัน: node scripts/seed-first-admin.js [รหัสผ่าน DB]
- * ถ้าไม่ส่งรหัสผ่าน DB จะใช้ "postgres" (สำหรับ local)
+ * หรือรันผ่าน run-db-setup.js (อ่าน DB_* จาก .env)
  */
+import "dotenv/config";
 import pg from "pg";
 import { hash } from "bcryptjs";
 
@@ -12,13 +13,13 @@ const ADMIN_EMAIL = "admin@host.com";
 const ADMIN_PASSWORD = "admin11223344";
 const ADMIN_DISPLAY_NAME = "แอดมิน";
 
-// การเชื่อมต่อ DB — ใช้ค่า default สำหรับ local (ไม่ใช้ .env)
-const dbPassword = process.argv[2] ?? "postgres";
+// การเชื่อมต่อ DB — ใช้ .env ได้ หรือส่งรหัสผ่านเป็น argument
+const dbPassword = process.argv[2] ?? process.env.DB_PASSWORD ?? "postgres";
 const config = {
-  host: "localhost",
-  port: 5432,
-  database: "sakuramarket",
-  user: "postgres",
+  host: process.env.DB_HOST ?? "localhost",
+  port: Number(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME ?? "sakuramarket",
+  user: process.env.DB_USER ?? "postgres",
   password: dbPassword,
 };
 

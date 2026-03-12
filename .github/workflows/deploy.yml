@@ -70,13 +70,7 @@ jobs:
             --exclude 'public/uploads' \
             . ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:${{ env.DEPLOY_PATH }}/
 
-      # สร้างตาราง/คอลัมน์ + ref_status, rooms, package_plans (seed.sql) + แอดมินคนแรก — สคริปต์ใช้ IF NOT EXISTS / ON CONFLICT จึงไม่สร้างซ้ำ
-      - name: DB init and seed first admin on EC2
-        run: |
-          ssh -i ~/.ssh/deploy.pem -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ConnectionAttempts=3 ${{ env.EC2_USER }}@${{ env.EC2_HOST }} \
-            "source ~/.nvm/nvm.sh 2>/dev/null; cd ${{ env.DEPLOY_PATH }} && node scripts/db-init.js && PW=\$(grep '^DB_PASSWORD=' .env | cut -d= -f2- | tr -d '\\r' | xargs) && node scripts/seed-first-admin.js \"\$PW\""
-
-
+      # สร้างตาราง/แอดมิน: ไม่รันใน workflow (หลีกเลี่ยงปัญหา auth) — รันบนเซิร์ฟเวอร์ครั้งแรก: cd DEPLOY_PATH && node scripts/run-db-setup.js
       # บน EC2 ไม่มีการ install/build — โหลด nvm แล้วแค่ restart app (โค้ด + node_modules + .next ส่งมาจาก runner แล้ว)
       - name: Restart app on EC2
         run: |
