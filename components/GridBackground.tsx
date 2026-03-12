@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { GRID_SIZE, GRID_COLOR, GRID_FILL_COLOR, WORLD_WIDTH, WORLD_HEIGHT, ROOM_GRID_BACKGROUND } from '../constants';
 import type { RoomId } from '../types';
 import * as PIXI from 'pixi.js';
+import { getDriveImageDisplayUrl } from '@/lib/driveImageUrl';
 
 interface Props {
   container: PIXI.Container;
@@ -41,11 +42,14 @@ export const GridBackground = ({ container, currentRoom, showGridLines, gridBgUr
 
     // 2. เติมพื้นหลังตารางเฉพาะเมื่อห้องไม่มีภาพพื้นหลังตาราง (ให้ภาพใน WorldBackground โชว์ผ่าน)
     // ใช้ค่าจาก DB ก่อน ถ้าไม่มีค่อย fallback ไป constant
-    const resolvedBgUrl =
+    const defaultBgUrl = ROOM_GRID_BACKGROUND[currentRoom as 1 | 2] ?? null;
+    const preferredBgUrl =
       gridBgUrlProp !== undefined
         ? gridBgUrlProp
-        : (ROOM_GRID_BACKGROUND[currentRoom as 1 | 2] ?? null);
-    const hasGridBackgroundImage = Boolean(resolvedBgUrl);
+        : defaultBgUrl;
+    const preferredDisplayUrl = getDriveImageDisplayUrl(preferredBgUrl ?? "");
+    const fallbackDisplayUrl = defaultBgUrl ? getDriveImageDisplayUrl(defaultBgUrl) : "";
+    const hasGridBackgroundImage = Boolean(preferredDisplayUrl || fallbackDisplayUrl);
     if (!hasGridBackgroundImage) {
       g.setFillStyle({ color: GRID_FILL_COLOR, alpha: 1 });
       g.rect(0, 0, worldWidthPx, worldHeightPx);

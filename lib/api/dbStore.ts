@@ -6,6 +6,7 @@ import { query } from "@/lib/db";
 import { withTransaction } from "@/lib/dbTransaction";
 import type { PoolClient } from "pg";
 import type { Parcel, Announcement } from "@/types";
+import { getDriveImageDisplayUrl } from "@/lib/driveImageUrl";
 
 /** โหมดเดโม: ไม่หักเงิน (user_balances) และไม่หักเครดิตโฆษณา (user_ad_credits) — ตั้ง DEMO_MODE=true ใน .env */
 function isDemoMode(): boolean {
@@ -27,7 +28,10 @@ export async function getRooms(): Promise<{ id: number; name: string; background
   return res.rows.map((r) => ({
     id: r.id,
     name: r.name,
-    background_url: r.background_url,
+    background_url:
+      typeof r.background_url === "string" && r.background_url.trim()
+        ? (getDriveImageDisplayUrl(r.background_url) ? r.background_url : null)
+        : null,
     slot_price_per_day: Number(r.slot_price_per_day) || 0,
     min_rent_days: Number(r.min_rent_days) || 1,
   }));

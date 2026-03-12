@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as PIXI from 'pixi.js';
 import type { RoomId } from '../types';
 import { ROOM_GRID_BACKGROUND, WORLD_TOTAL_SIZE_PX } from '../constants';
@@ -33,29 +33,70 @@ type GridBackgroundAsset =
 /** ชั้นพื้นหลังโลก — พื้นหลังแอปอยู่ที่ App.tsx | ห้อง 2 ใช้ภาพพื้นหลังตาราง (รองรับ PNG/JPG และ GIF) */
 export const WorldBackground = ({ container, currentRoom, gridBgUrl: gridBgUrlProp }: Props) => {
   const [asset, setAsset] = useState<GridBackgroundAsset>(null);
+  const defaultBgUrl = ROOM_GRID_BACKGROUND[currentRoom as 1 | 2] ?? null;
   // ใช้ค่าจาก DB ก่อน ถ้าไม่มีค่อย fallback ไป constant
-  const gridBgUrl =
+  const preferredBgUrl =
     gridBgUrlProp !== undefined
       ? gridBgUrlProp
-      : (ROOM_GRID_BACKGROUND[currentRoom as 1 | 2] ?? null);
-  let displayGridBgUrl = getDriveImageDisplayUrl(gridBgUrl ?? '');
-  // PIXI.Assets.load ต้องได้ absolute URL ในบางสภาพแวดล้อม
-  if (typeof window !== 'undefined' && displayGridBgUrl.startsWith('/')) {
-    displayGridBgUrl = window.location.origin + displayGridBgUrl;
-  }
+      : defaultBgUrl;
+  const displayCandidates = useMemo(() => {
+    const preferred = getDriveImageDisplayUrl(preferredBgUrl ?? '');
+    const fallback = defaultBgUrl ? getDriveImageDisplayUrl(defaultBgUrl) : '';
+    const seed = preferred ? [preferred] : fallback ? [fallback] : [];
+    const expanded: string[] = [];
+    for (const u of seed) {
+      if (!u) continue;
+      expanded.push(u);
+      if (u.startsWith('/api/proxy-image?url=')) {
+        try {
+          const parsed = new URL(`http://local${u}`);
+          const upstream = parsed.searchParams.get('url');
+          if (upstream) expanded.push(upstream);
+        } catch {
+          // ignore parse error and keep original URL
+        }
+      }
+    }
+    const dedup = Array.from(new Set(expanded));
+    return dedup.map((u) => {
+      if (typeof window !== 'undefined' && u.startsWith('/')) {
+        return window.location.origin + u;
+      }
+      return u;
+    });
+  }, [preferredBgUrl, defaultBgUrl]);
+  const displayGridBgUrl = displayCandidates[0] ?? '';
   const isMobileDevice = isMobile();
 
   useEffect(() => {
-    if (!displayGridBgUrl) {
+    if (displayCandidates.length === 0) {
       setAsset(null);
       return;
     }
     let cancelled = false;
     const isGif = /\.gif$/i.test(displayGridBgUrl);
 
-    PIXI.Assets.load(displayGridBgUrl).then((loaded) => {
+    const loadWithFallback = async (): Promise<unknown | null> => {
+      for (const url of displayCandidates) {
+        try {
+          const loaded = await PIXI.Assets.load(url);
+          if (loaded) return loaded;
+        } catch {
+          // try next candidate
+        }
+      }
+      return null;
+    };
+
+    loadWithFallback().then((loaded) => {
       if (cancelled) return;
-      if (isGif && loaded && 'totalFrames' in loaded && typeof (loaded as GifSourceLike).totalFrames === 'number') {
+      if (
+        isGif &&
+        typeof loaded === 'object' &&
+        loaded !== null &&
+        'totalFrames' in loaded &&
+        typeof (loaded as GifSourceLike).totalFrames === 'number'
+      ) {
         setAsset({ type: 'gif', source: loaded as GifSourceLike });
       } else if (loaded) {
         setAsset({ type: 'texture', texture: loaded as PIXI.Texture });
@@ -66,7 +107,7 @@ export const WorldBackground = ({ container, currentRoom, gridBgUrl: gridBgUrlPr
       if (!cancelled) setAsset(null);
     });
     return () => { cancelled = true; };
-  }, [displayGridBgUrl]);
+  }, [displayGridBgUrl, displayCandidates]);
 
   useEffect(() => {
     const layer = new PIXI.Container();

@@ -32,7 +32,7 @@ export async function PATCH(
       typeof background_url === "string" &&
       background_url.includes("drive.google.com") &&
       !/[\?&]id=[^&]/.test(background_url) &&
-      (background_url.includes("/uc?i") || background_url.includes("/uc?export"))
+      background_url.includes("/uc?")
     ) {
       background_url = null;
     }
