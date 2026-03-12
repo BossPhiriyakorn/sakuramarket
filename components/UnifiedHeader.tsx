@@ -284,17 +284,23 @@ export function UnifiedHeader({
     }
   };
 
-  // ทุกหน้าใช้แบบเดียวกับหน้าแรก: โลโก้ด้านซ้าย (ไม่ใช้ปุ่มกลับ/ชื่อหน้าในแถบเฮด)
+  // ทุกหน้าใช้แบบเดียวกับหน้าแรก: โลโก้ด้านซ้าย (กดไปหน้าแผนที่/หน้าแรก)
   const finalLeftContent: React.ReactNode =
     leftContent !== undefined ? (
       leftContent
     ) : (
-      <h1 className="max-w-[52vw] sm:max-w-none text-base sm:text-xl font-bold text-white tracking-tighter uppercase truncate">
+      <Link
+        href="/map"
+        onClick={() => startNavigation()}
+        className="max-w-[52vw] sm:max-w-none text-base sm:text-xl font-bold text-white tracking-tighter uppercase truncate hover:opacity-90 active:opacity-80 transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-pink-500/50 rounded"
+        title="หน้าแรก"
+        aria-label="ไปหน้าแรก"
+      >
         SAKURA<span className="text-pink-500">MARKET</span>
-      </h1>
+      </Link>
     );
 
-  const headerClass = `sticky top-0 w-full min-h-16 app-glass border-b border-white/10 flex items-center justify-between px-3 sm:px-4 md:px-6 safe-top pointer-events-auto z-[100] ${className}`;
+  const headerClass = `w-full min-h-16 app-glass border-b border-white/10 flex items-center justify-between px-3 sm:px-4 md:px-6 safe-top pointer-events-auto z-[100] ${className}`;
 
   return (
     <>

@@ -185,7 +185,7 @@ export const UIOverlay = () => {
         />
       </div>
 
-      <div className="px-3 pt-2 pb-4 safe-bottom sm:px-4 md:px-6 flex justify-end items-end">
+      <div className="px-3 pt-2 pb-16 safe-bottom sm:px-4 md:px-6 flex justify-end items-end">
         <div className="pointer-events-auto flex flex-col items-end gap-3">
           <FloatingControls
             showGridLines={showGridLines}
